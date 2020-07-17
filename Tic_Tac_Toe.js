@@ -1,30 +1,228 @@
 (function() {
   "use strict";
+  const CHECKER_NUM = 9;
+
+  const INTRO = 0;
+  const ONE_PLAYER = 1;
+  const TWO_PLAYER = 2;
+
+  const NOT_END = 0;
+  const WIN = 1;
+  const TIE = 2;
+
+
+  /* ------------------------------ Model -------------------------------- */
+  class DataModel {
+    constructor() {
+      this.reset();
+      this.gameBoardSetup = false;
+    }
+
+    reset() {
+      this.status = INTRO;
+      this.checkerStatus = new Array(CHECKER_NUM).fill(0); // 0 -> blank, 1 -> O, 2 -> X
+      this.turn = 1; // 1 -> player 1,  2 -> player 2
+      this.endGameStatus = NOT_END;
+    }
+  }
+
+  /* ---------------------------- Controller ------------------------------ */
 
   window.addEventListener("load", init);
-
-  const  CHECKER_NUM = 9;
-  let steps = 0;
-  let inGame = true; // keep track of the status of the game
-  let avaliableCheckers = [];
+  let model = new DataModel();
 
   function init() {
-    setUpView();
-    id("start").addEventListener("click", setUpGameboard);
-    id("playagain").addEventListener("click", setUpView);
+    render();
+    id("start").addEventListener("click", changeModel);
+    id("playagain").addEventListener("click", resetModel);
   }
 
-  function setUpView() {
-    clearGameboard();
-    id("outcome").style.display = "none";
-    id("playagain").style.display = "none";
-    id("choosePlayer").style.display = "block";
-    id("turn").style.display = "none";
+  function changeModel() {
+    let choice = qs('input[name="player"]:checked').value;
+    if (choice == "friend") {
+      model.status = TWO_PLAYER;
+    } else {
+      model.status = ONE_PLAYER;
+    }
+    render();
+    model.gameBoardSetup = true;
   }
+
+  function resetModel() {
+    model.reset();
+    render();
+  }
+
+  function move(index) {
+    // only make the move when the spot is still avaliable and game is not ended
+    if (model.endGameStatus == NOT_END && (model.status == ONE_PLAYER ||
+        model.status == TWO_PLAYER) && model.checkerStatus[index] == 0) {
+      if (model.turn == 1) {
+        model.checkerStatus[index] = 1;
+        model.turn = 2;
+      } else {
+        model.checkerStatus[index] = 2;
+        model.turn = 1;
+      }
+      if (checkSuccess()) {
+        model.endGameStatus = WIN;
+      } else if (checkTie()) {
+        model.endGameStatus = TIE;
+      }
+      if (model.status == ONE_PLAYER) {
+        let avaliableCheckers = [];
+        for (let i = 0; i < model.checkerStatus.length; i++) {
+          if (model.checkerStatus[i] == 0) {
+            avaliableCheckers.push(i);
+          }
+        }
+        let choice  = Math.floor(Math.random() * avaliableCheckers.length);
+        model.checkerStatus[avaliableCheckers[choice]] = 2;
+        model.turn = 1;
+      }
+      render();
+    }
+  }
+
+  function checkSuccess() {
+    return checkHorizontal() || checkVertical() || checkDiagnol();
+  }
+
+  function checkTie() {
+    for (let i = 0; i < model.checkerStatus.length; i++) {
+      if (model.checkerStatus[i] == 0) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function checkHorizontal() {
+    for (let i = 0; i < model.checkerStatus.length; i = i + 3) {
+      if (model.checkerStatus[i] == 0) {
+        continue;
+      }
+      if (model.checkerStatus[i] == model.checkerStatus[i + 1] &&
+          model.checkerStatus[i + 1] == model.checkerStatus[i + 2]) {
+            return true;
+          }
+    }
+    return false;
+  }
+
+  function checkVertical() {
+    for (let i = 0; i < 3; i++) {
+      if (model.checkerStatus[i] == 0) {
+        continue;
+      }
+      if (model.checkerStatus[i] == model.checkerStatus[i + 3] &&
+          model.checkerStatus[i + 3] == model.checkerStatus[i + 6]) {
+            return true;
+          }
+    }
+    return false;
+  }
+
+  function checkDiagnol() {
+    if (model.checkerStatus[0] != 0) {
+      if (model.checkerStatus[0] == model.checkerStatus[4] &&
+          model.checkerStatus[4] == model.checkerStatus[8]) {
+            return true;
+      }
+    }
+    if (model.checkerStatus[2] != 0) {
+      if (model.checkerStatus[2] == model.checkerStatus[4] &&
+          model.checkerStatus[4] == model.checkerStatus[6]) {
+          return true;
+      }
+    }
+    return false;
+  }
+
+  /* -------------------------------- View ---------------------------------- */
+  function render() {
+    displayIntro();
+    displayGameBoard();
+    displayTurn();
+    displayOutcome();
+  }
+
+  function displayIntro() {
+    if (model.status == INTRO) {
+      id("chooseplayer").style.display = "block";
+    } else {
+      id("chooseplayer").style.display = "none";
+    }
+  }
+
+  function displayGameBoard() {
+    if (model.status == INTRO) {
+      id("gameboard").style.display = "none";
+    } else {
+      id("gameboard").style.display = "inline-block";
+      if (!model.gameBoardSetup) {
+        setUpGameboard();
+      }
+      let checkers = qsa(".checker");
+      for (let i = 0; i < model.checkerStatus.length; i++) {
+        if (model.checkerStatus[i] == 1) {
+          checkers[i].innerText = "O";
+        } else if (model.checkerStatus[i] == 2) {
+          checkers[i].innerText = "X";
+        } else {
+          checkers[i].innerText = "";
+        }
+      }
+    }
+  }
+
+  function displayTurn() {
+    if (model.status == ONE_PLAYER || model.status == TWO_PLAYER) {
+      id("turn").style.display = "block";
+      if (model.status == ONE_PLAYER) {
+        if (model.turn == 1) {
+          id("turn").innerText = "Please make a move."
+        }
+      } else {
+        if (model.turn == 1) {
+          id("turn").innerText = "Player 1, please make a move."
+        } else {
+          id("turn").innerText = "Player 2, please make a move."
+        }
+      }
+    } else {
+      id("turn").style.display = "none";
+    }
+  }
+
+  function displayOutcome() {
+    if (model.endGameStatus == NOT_END) {
+      id("playagain").style.display = "none";
+      id("outcome").style.display = "none";
+    } else {
+      id("outcome").style.display = "block";
+      id("playagain").style.display = "inline-block";
+      id("turn").style.display = "none";
+      if (model.endGameStatus == TIE) {
+        id("outcome").innerText = "You achieved a tie.";
+      } else if (model.status == ONE_PLAYER) {
+        if (model.turn == 1) {
+          id("outcome").innerText = "You won!";
+        } else {
+          id("outcome").innerText = "You lost!";
+        }
+      } else {
+        if (model.turn == 1) {
+          id("outcome").innerText = "Player 2 won!";
+        } else {
+          id("outcome").innerText = "Player 1 won!";
+        }
+      }
+    }
+  }
+
 
   function setUpGameboard() {
-    clearIntro();
-    inGame = true;
     let row = 0;
     let col = 0;
     let index = 1;
@@ -43,159 +241,12 @@
         row++;
       }
       id("gameboard").appendChild(checker);
-      avaliableCheckers.push(checker);
     }
-    assignPlayer();
-  }
-
-  function clearIntro() {
-    id("choosePlayer").style.display = "none";
-  }
-
-  function assignPlayer() {
-    let choice = qs('input[name="player"]:checked').value;
-    id("turn").style.display = "block";
     let checkers = qsa(".checker");
-    if (choice == "friend") {
-      id("turn").innerText = "Player 1, please make a move.";
-      for (let i = 0; i < checkers.length; i++) {
-        checkers[i].addEventListener("click", move);
-      }
-    } else {
-      id("turn").innerText = "Please make a move.";
-      for (let i = 0; i < checkers.length; i++) {
-        checkers[i].addEventListener("click", playWithComp);
-      }
+    for (let i = 0; i < checkers.length; i++) {
+      checkers[i].addEventListener("click", move.bind(checkers[i], i));
     }
   }
-
-  function playWithComp() {
-    if (inGame && this.innerText == "") {
-      steps++;
-      let index = avaliableCheckers.indexOf(this);
-      avaliableCheckers.splice(index, 1);
-      this.innerText = "O";
-      if (checkSuccess()) {
-        endGame("You won!");
-      } else if (checkTie()) {
-        endGame("You achieved a tie.");
-      } else {
-        compMove();
-      }
-    }
-  }
-
-  function clearGameboard() {
-    id("gameboard").innerHTML = "";
-    steps = 0;
-  }
-
-  function compMove() {
-    steps++;
-    let size = avaliableCheckers.length;
-    let choice = Math.floor(Math.random() * size);
-    let checker = avaliableCheckers[choice];
-    checker.innerText = "X";
-    avaliableCheckers.splice(choice, 1);
-    if (checkSuccess()) {
-      endGame("You lost!");
-    } else if (checkTie()) {
-      endGame("You achieved a tie.");
-    } else {
-      id("turn").innerText = "Please make a move.";
-    }
-  }
-
-  function move() {
-    // only make the move when the spot is still avaliable and game is not ended
-    if (inGame && this.innerText == "") {
-      steps++;
-      let index = avaliableCheckers.indexOf(this);
-      avaliableCheckers.splice(index, 1);
-      if (steps % 2 == 0) {
-        this.innerText = "X";
-      } else {
-        this.innerText = "O";
-      }
-      if (checkSuccess()) {
-        let player = steps % 2;
-        let msg = "";
-        if (player == 1) {
-          msg = "Player 1 won!";
-        } else {
-          msg = "Player 2 won!";
-        }
-        endGame(msg);
-      } else if (checkTie()) {
-        endGame("You achieved a tie.");
-      } else {
-        id("turn").innerText = "Player " + (steps % 2 + 1) + ", please make a move.";
-      }
-    }
-  }
-
-  function checkSuccess() {
-    return checkHorizontal() || checkVertical() || checkDiagnol();
-  }
-
-  function checkTie() {
-    return avaliableCheckers.length == 0;
-  }
-
-  function checkHorizontal() {
-    let row = 3;
-    for (let i = 0; i < row; i++) {
-      if (id("checker" + (i * 3 + 1)).innerText == "") {
-        continue;
-      }
-      if (id("checker" + (i * 3 + 1)).innerText == id("checker" + (i * 3 + 2)).innerText &&
-          id("checker" + (i * 3 + 2)).innerText == id("checker" + (i * 3 + 3)).innerText) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  function checkVertical() {
-    let col = 3;
-    for (let i = 1; i <= col; i++) {
-      if (id("checker" + i).innerText == "") {
-        continue;
-      }
-      if (id("checker" + i).innerText == id("checker" + (i + 3)).innerText &&
-          id("checker" + (i + 3)).innerText == id("checker" + (i + 6)).innerText) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  function checkDiagnol() {
-    if (id("checker1").innerText != "") {
-      if (id("checker1").innerText == id("checker5").innerText &&
-         id("checker5").innerText == id("checker9").innerText) {
-        return true;
-      }
-    }
-    if (id("checker3").innerText != "") {
-      if (id("checker3").innerText == id("checker5").innerText &&
-          id("checker5").innerText == id("checker7").innerText) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  function endGame(msg) {
-    id("turn").style.display = "none";
-    id("outcome").style.display = "block";
-    id("outcome").innerText = msg;
-    id("playagain").style.display = "inline-block";
-    id("turn").style.display = "none";
-    avaliableCheckers = [];
-    inGame = false;
-  }
-
   /*----------------------------- Helper Functions ------------------------- */
   function id(query) {
     return document.getElementById(query);
