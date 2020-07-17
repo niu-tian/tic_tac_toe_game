@@ -29,6 +29,7 @@
   /* ---------------------------- Controller ------------------------------ */
 
   window.addEventListener("load", init);
+
   let model = new DataModel();
 
   function init() {
@@ -64,12 +65,8 @@
         model.checkerStatus[index] = 2;
         model.turn = 1;
       }
-      if (checkSuccess()) {
-        model.endGameStatus = WIN;
-      } else if (checkTie()) {
-        model.endGameStatus = TIE;
-      }
-      if (model.status == ONE_PLAYER) {
+      updateGameStatus();
+      if (model.endGameStatus == NOT_END && model.status == ONE_PLAYER) {
         let avaliableCheckers = [];
         for (let i = 0; i < model.checkerStatus.length; i++) {
           if (model.checkerStatus[i] == 0) {
@@ -79,8 +76,17 @@
         let choice  = Math.floor(Math.random() * avaliableCheckers.length);
         model.checkerStatus[avaliableCheckers[choice]] = 2;
         model.turn = 1;
+        updateGameStatus();
       }
       render();
+    }
+  }
+
+  function updateGameStatus() {
+    if (checkSuccess()) {
+      model.endGameStatus = WIN;
+    } else if (checkTie()) {
+      model.endGameStatus = TIE;
     }
   }
 
@@ -104,8 +110,8 @@
       }
       if (model.checkerStatus[i] == model.checkerStatus[i + 1] &&
           model.checkerStatus[i + 1] == model.checkerStatus[i + 2]) {
-            return true;
-          }
+        return true;
+      }
     }
     return false;
   }
@@ -117,8 +123,8 @@
       }
       if (model.checkerStatus[i] == model.checkerStatus[i + 3] &&
           model.checkerStatus[i + 3] == model.checkerStatus[i + 6]) {
-            return true;
-          }
+        return true;
+      }
     }
     return false;
   }
@@ -141,6 +147,7 @@
 
   /* -------------------------------- View ---------------------------------- */
   function render() {
+    console.log(model);
     displayIntro();
     displayGameBoard();
     displayTurn();
@@ -180,15 +187,9 @@
     if (model.status == ONE_PLAYER || model.status == TWO_PLAYER) {
       id("turn").style.display = "block";
       if (model.status == ONE_PLAYER) {
-        if (model.turn == 1) {
-          id("turn").innerText = "Please make a move."
-        }
+        id("turn").innerText = "Please make a move."
       } else {
-        if (model.turn == 1) {
-          id("turn").innerText = "Player 1, please make a move."
-        } else {
-          id("turn").innerText = "Player 2, please make a move."
-        }
+        id("turn").innerText = "Player " + model.turn + ", please make a move."
       }
     } else {
       id("turn").style.display = "none";
@@ -207,9 +208,9 @@
         id("outcome").innerText = "You achieved a tie.";
       } else if (model.status == ONE_PLAYER) {
         if (model.turn == 1) {
-          id("outcome").innerText = "You won!";
-        } else {
           id("outcome").innerText = "You lost!";
+        } else {
+          id("outcome").innerText = "You won!";
         }
       } else {
         if (model.turn == 1) {
@@ -221,25 +222,12 @@
     }
   }
 
-
   function setUpGameboard() {
-    let row = 0;
-    let col = 0;
-    let index = 1;
     for (let i = 0; i < CHECKER_NUM; i++) {
       let checker = document.createElement("div");
       checker.classList.add("checker");
-      checker.id = "checker" + index;
-      index++;
-      checker.style.left = col * 100 + "px";
-      checker.style.top = row * 100 + "px";
-      col++;
-      if (col == 3) {
-        col = 0;
-      }
-      if (i % 3 == 2) {
-        row++;
-      }
+      checker.style.left = (i % 3) * 100 + "px";
+      checker.style.top = Math.floor(i / 3) * 100 + "px";
       id("gameboard").appendChild(checker);
     }
     let checkers = qsa(".checker");
