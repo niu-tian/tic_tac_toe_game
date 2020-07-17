@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Tic Tac Toe Game</title>
+    <link href="Tic_Tac_Toe.css" type="text/css" rel="stylesheet" />
+    <script src="Tic_Tac_Toe.js" type="text/javascript"></script>
+    <!-- <link rel="icon" href="demo_icon.gif" type="image/gif" sizes="16x16"> -->
+  </head>
+
+  <body>
+    <h1>Welcome to the Tic Tac Toe Game!</h1>
+
+    <p>Tic-tac-toe is a paper-and-pencil game for two players, who take turns
+      marking the spaces in a 3×3 grid. The player who succeeds in placing three
+      of their marks in a horizontal, vertical, or diagonal row is the winner.
+    </p>
+
+    <div id="choosePlayer">
+      <p>Please choose who you want to play with: </p>
+      <form>
+        <input type="radio" id="2player" name="player" value="friend" checked>
+        <label for="friend">Play with my friend</label><br>
+        <input type="radio" id="1player" name="player" value="computer">
+        <label for="computer">Play with computer</label>
+      </form>
+      <button id="start">Start the game!</button>
+    </div>
+
+    <div id="gameboard"></div>
+
+    <p id="turn"></p>
+
+    <p id="outcome"></p>
+
+    <div id="playagain"><button>Play again!</button></div>
+  </body>
+</html>
