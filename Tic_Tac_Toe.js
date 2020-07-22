@@ -1,5 +1,6 @@
 (function() {
   "use strict";
+  const AI_MODE = 1 // 0 -> random, 1 -> smart
   const CHECKER_NUM = 9;
 
   const INTRO = 0;
@@ -67,19 +68,246 @@
       }
       updateGameStatus();
       if (model.endGameStatus == NOT_END && model.status == ONE_PLAYER) {
-        let avaliableCheckers = [];
-        for (let i = 0; i < model.checkerStatus.length; i++) {
-          if (model.checkerStatus[i] == 0) {
-            avaliableCheckers.push(i);
-          }
+        switch(AI_MODE) {
+          case 0:
+            aiMoveRandom();
+            break;
+          case 1:
+            aiMove();
+            break;
+          default:
+            aiMoveRandom();
         }
-        let choice  = Math.floor(Math.random() * avaliableCheckers.length);
-        model.checkerStatus[avaliableCheckers[choice]] = 2;
         model.turn = 1;
         updateGameStatus();
       }
       render();
     }
+  }
+
+  function validate(zeros, ones, twos) {
+    for (let i = 0; i < zeros.length; i++) {
+      if (model.checkerStatus[zeros[i]] != 0) return false;
+    }
+    for (let i = 0; i < ones.length; i++) {
+      if (model.checkerStatus[ones[i]] != 1) return false;
+    }
+    for (let i = 0; i < twos.length; i++) {
+      if (model.checkerStatus[twos[i]] != 2) return false;
+    }
+    return true;
+  }
+
+  function notOccupiedByO(index) {
+    for (let i = 0; i < index.length; i++) {
+      if (model.checkerStatus[index[i]] == 1) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function aiMove() {
+    // check if any 2 'X''s already form a row/column/diagnol
+    for (let i = 0; i < model.checkerStatus.length; i++) {
+      if (i % 3 == 0) {
+        if (validate([i], [], [i + 1, i + 2])) {
+          model.checkerStatus[i] = 2;
+          return;
+        }
+        if (validate([i + 1], [], [i, i+ 2])) {
+          model.checkerStatus[i + 1] = 2;
+          return;
+        }
+        if (validate([i + 2], [], [i, i+ 1])) {
+          model.checkerStatus[i + 2] = 2;
+          return;
+        }
+      }
+      if (i < 3) {
+        if (validate([i], [], [i + 3, i+ 6])) {
+          model.checkerStatus[i] = 2;
+          return;
+        }
+        if (validate([i + 3], [], [i, i+ 6])) {
+          model.checkerStatus[i + 3] = 2;
+          return;
+        }
+        if (validate([i + 6], [], [i, i+ 3])) {
+          model.checkerStatus[i + 6] = 2;
+          return;
+        }
+      }
+      if (i == 0) {
+        if (validate([i], [], [i + 4, i+ 8])) {
+          model.checkerStatus[i] = 2;
+          return;
+        }
+        if (validate([i + 4], [], [i, i+ 8])) {
+          model.checkerStatus[i + 4] = 2;
+          return;
+        }
+        if (validate([i + 8], [], [i, i+ 4])) {
+          model.checkerStatus[i + 8] = 2;
+          return;
+        }
+      }
+      if (i == 2) {
+        if (validate([i], [], [i + 2, i+ 4])) {
+          model.checkerStatus[i] = 2;
+          return;
+        }
+        if (validate([i + 2], [], [i, i+ 4])) {
+          model.checkerStatus[i + 2] = 2;
+          return;
+        }
+        if (validate([i + 4], [], [i, i+ 2])) {
+          model.checkerStatus[i + 4] = 2;
+          return;
+        }
+      }
+    }
+    // check if any 2 'O''s already form a row/column/diagnol
+    for (let i = 0; i < model.checkerStatus.length; i++) {
+      if (i % 3 == 0) {
+        if (validate([i], [i + 1, i + 2], [])) {
+          model.checkerStatus[i] = 2;
+          return;
+        }
+        if (validate([i + 1], [i, i + 2], [])) {
+          model.checkerStatus[i + 1] = 2;
+          return;
+        }
+        if (validate([i + 2], [i, i + 1], [])) {
+          model.checkerStatus[i + 2] = 2;
+          return;
+        }
+      }
+      if (i < 3) {
+        if (validate([i], [i + 3, i + 6], [])) {
+          model.checkerStatus[i] = 2;
+          return;
+        }
+        if (validate([i + 3], [i, i + 6], [])) {
+          model.checkerStatus[i + 3] = 2;
+          return;
+        }
+        if (validate([i + 6], [i, i + 3], [])) {
+          model.checkerStatus[i + 6] = 2;
+          return;
+        }
+      }
+      if (i == 0) {
+        if (validate([i], [i + 4, i + 8], [])) {
+          model.checkerStatus[i] = 2;
+          return;
+        }
+        if (validate([i + 4], [i, i + 8], [])) {
+          model.checkerStatus[i + 4] = 2;
+          return;
+        }
+        if (validate([i + 8], [i, i + 4], [])) {
+          model.checkerStatus[i + 8] = 2;
+          return;
+        }
+      }
+      if (i == 2) {
+        if (validate([i], [i + 2, i + 4], [])) {
+          model.checkerStatus[i] = 2;
+          return;
+        }
+        if (validate([i + 2], [i, i + 4], [])) {
+          model.checkerStatus[i + 2] = 2;
+          return;
+        }
+        if (validate([i + 4], [i, i + 2], [])) {
+          model.checkerStatus[i + 4] = 2;
+          return;
+        }
+      }
+    }
+    // check all avaliable spots, choose the one with largest probability to win
+    let choice = -1;
+    let maxProb = -1;
+    for (let i = 0; i < model.checkerStatus.length; i++) {
+      if (model.checkerStatus[i] == 0) {
+        let prob = 0;
+        if (i % 3 == 0) {
+          if (notOccupiedByO([i + 1, i + 2])) {
+            prob++;
+          }
+        }
+        if (i % 3 == 1) {
+          if (notOccupiedByO([i - 1, i + 1])) {
+            prob++;
+          }
+        }
+        if (i % 3 == 2) {
+          if (notOccupiedByO([i - 1, i - 2])) {
+            prob++;
+          }
+        }
+        if (Math.floor(i / 3) == 0) {
+          if (notOccupiedByO([i + 3, i + 6])) {
+            prob++;
+          }
+        }
+        if (Math.floor(i / 3) == 1) {
+          if (notOccupiedByO([i - 3, i + 3])) {
+            prob++;
+          }
+        }
+        if (Math.floor(i / 3) == 2) {
+          if (notOccupiedByO([i - 3, i - 6])) {
+            prob++;
+          }
+        }
+        if (i == 0) {
+          if (notOccupiedByO([i + 4, i + 8])) {
+            prob++;
+          }
+        }
+        if (i == 4) {
+          if (notOccupiedByO([i - 4, i + 4])) {
+            prob++;
+          }
+          if (notOccupiedByO([i - 2, i + 2])) {
+            prob++;
+          }
+        }
+        if (i == 8) {
+          if (notOccupiedByO([i - 4, i - 8])) {
+            prob++;
+          }
+        }
+        if (i == 2) {
+          if (notOccupiedByO([i + 2, i + 4])) {
+            prob++;
+          }
+        }
+        if (i == 6) {
+          if (notOccupiedByO([i - 2, i - 4])) {
+            prob++;
+          }
+        }
+        if (prob > maxProb) {
+          maxProb = prob;
+          choice = i;
+        }
+      }
+    }
+    model.checkerStatus[choice] = 2;
+  }
+
+  function aiMoveRandom() {
+    let avaliableCheckers = [];
+    for (let i = 0; i < model.checkerStatus.length; i++) {
+      if (model.checkerStatus[i] == 0) {
+        avaliableCheckers.push(i);
+      }
+    }
+    let choice  = Math.floor(Math.random() * avaliableCheckers.length);
+    model.checkerStatus[avaliableCheckers[choice]] = 2;
   }
 
   function updateGameStatus() {
