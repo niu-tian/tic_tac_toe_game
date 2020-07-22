@@ -375,7 +375,6 @@
 
   /* -------------------------------- View ---------------------------------- */
   function render() {
-    console.log(model);
     displayIntro();
     displayGameBoard();
     displayTurn();
